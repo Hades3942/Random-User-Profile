@@ -1,93 +1,55 @@
-
-// We asked for just 1 person using ?results=1
-var API_URL = 'https://randomuser.me/api/?results=1';
-
-// --- Helper function: builds and displays the profile card ---
-function showProfile(person) {
-
-  // TASK 1 - Full name (title + first + last):
-  // The person object is deeply nested. Name lives at: data.results[0].name
-  // We combine title, first and last for a complete name.
-  var title    = person.name.title;    // e.g. "Mr"
-  var first    = person.name.first;    // e.g. "James"
-  var last     = person.name.last;     // e.g. "Wilson"
-  var fullName = title + ' ' + first + ' ' + last;
-
-  // Photo: person.picture.large gives a high-quality portrait image
-  var photo = person.picture.large;
-
-  // TASK 2 - Deep drilling for email, phone, address:
-  // Email:   person.email
-  // Phone:   person.phone
-  // Address: built from person.location.street.number, .street.name, .city, .country
-  var email   = person.email;
-  var phone   = person.phone;
-  var street  = person.location.street.number + ' ' + person.location.street.name;
-  var city    = person.location.city;
-  var country = person.location.country;
-  var address = street + ', ' + city + ', ' + country;
-
-  // TASK 3 - Extra fields:
-  // Age:      person.dob.age
-  // Username: person.login.username
-  var age      = person.dob.age;
-  var username = person.login.username;
-
-  // Build the card HTML
-  var card = document.getElementById('profileCard');
-  card.innerHTML =
-    '<img src="' + photo + '" alt="Profile photo of ' + fullName + '">' +
-    '<h2>' + fullName + '</h2>' +
-    '<p class="username">@' + username + '</p>' +
-    '<div class="profile-info">' +
-      '<p><span class="label">Email:</span> ' + email + '</p>' +
-      '<p><span class="label">Phone:</span> ' + phone + '</p>' +
-      '<p><span class="label">Address:</span> ' + address + '</p>' +
-      '<p><span class="label">Age:</span> ' + age + '</p>' +
-    '</div>';
-}
-
-
-// --- TASK 1 & 4: Load one profile function ---
+// Function to fetch and display one profile
 function loadProfile() {
+  const profileDiv = document.getElementById("profile");
+  profileDiv.innerHTML = "Loading..."; // show loading state
 
-  // Clear any previous error
-  document.getElementById('errorMsg').textContent = '';
-
-  // Show loading placeholder while waiting for the API
-  var card = document.getElementById('profileCard');
-  card.innerHTML = '<p>Loading profile...</p>';
-
-  fetch(API_URL)
-    .then(function (response) {
-      return response.json();  // Convert response body to a JavaScript object
+  fetch("https://randomuser.me/api/?results=1")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
     })
-    .then(function (data) {
+    .then(data => {
+      // Drill into nested JSON
+      const person = data.results[0]; // first result
 
-      // console.log(data) lets us inspect the full JSON structure in the browser Console.
-      // The person object is at: data.results[0]
-      // (results is an array, so [0] gives the first — and only — person we asked for)
-      console.log(data);
+      // Full name: title + first + last
+      const fullName = `${person.name.title} ${person.name.first} ${person.name.last}`;
 
-      var person = data.results[0];
-      showProfile(person);
+      // Photo
+      const photo = person.picture.large;
+
+      // Contact info
+      const email = person.email;
+      const phone = person.phone;
+
+      // Address: street number + street name + city + country
+      const address = `${person.location.street.number} ${person.location.street.name}, ${person.location.city}, ${person.location.country}`;
+
+      // Extra fields: age + username
+      const age = person.dob.age;
+      const username = person.login.username;
+
+      // Build HTML card
+      profileDiv.innerHTML = `
+        <img src="${photo}" alt="Profile Photo">
+        <h2>${fullName}</h2>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Address:</strong> ${address}</p>
+        <p><strong>Age:</strong> ${age}</p>
+        <p><strong>Username:</strong> ${username}</p>
+      `;
     })
-    .catch(function (error) {
-      // TASK 5 - Handle failure:
-      // If the network request fails, show a friendly message instead of a blank card.
-      document.getElementById('profileCard').innerHTML = '';
-      document.getElementById('errorMsg').textContent =
-        'Could not load profile. Please check your connection and try again. (' + error.message + ')';
+    .catch(error => {
+      profileDiv.innerHTML = "Failed to load profile. Please try again.";
+      console.error("Error fetching profile:", error);
     });
 }
 
+// Load one profile on page load
+window.onload = loadProfile;
 
-// --- Run on page load (Task 1) ---
-loadProfile();
-
-
-// --- TASK 4: "Load Another Person" button ---
-// Calls loadProfile() again — fetches a brand-new person without reloading the page
-document.getElementById('newProfileBtn').addEventListener('click', function () {
-  loadProfile();
-});
+// Load another profile when button is clicked
+document.getElementById("newProfile").addEventListener("click", loadProfile);
